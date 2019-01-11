@@ -22,6 +22,11 @@ function ResourcesProvider( options ){
 	this._saveCount = 0;
 	this._changeCount = 0;
 
+	this._onReady = _.isFunction( options.onReady ) ? options.onReady : () => {};
+	this._onAdd = _.isFunction( options.onAdd ) ? options.onAdd : () => {};
+	this._onUpdate = _.isFunction( options.onUpdate ) ? options.onUpdate : () => {};
+	this._onRemove = _.isFunction( options.onRemove ) ? options.onRemove : () => {};
+
 	this._dir = path.resolve( options.dir || '.' );
 	this._pathCache = path.resolve( this._dir, '.resources.json' );
 	
@@ -43,13 +48,16 @@ function ResourcesProvider( options ){
 					this._updateFile(
 						file,
 						stat
-						)
-						.then( () => {
-							this._saveCache();
-						} );
-						console.log('watcher:add', file );
-					}
-				})
+					)
+					.then( () => {
+						this._saveCache();
+					} );
+					//console.log('watcher:add', file );
+					//notify any listenrs
+					this._onAdd( file );
+				}
+
+			})
 			.on( 'change', ( file, stat ) => {
 				file = path.relative( this._dir, file );
 				if( IsValidFile( file ) ){
@@ -61,20 +69,26 @@ function ResourcesProvider( options ){
 					.then( () => {
 						this._saveCache();
 					} );
-					console.log('watcher:change', file );
+					//console.log('watcher:change', file );
+					//notify any listenrs
+					this._onUpdate( file );
 				}
 			})
 			.on( 'unlink', ( file, stat ) => {
 				file = path.relative( this._dir, file );
 				if( IsValidFile( file ) ){
-					console.log('watcher:unlink', file );
+					//console.log('watcher:unlink', file );
 					this._removeFile( file )
 					.then( () => {
 						this._saveCache();
 					} );
+					//notify any listenrs
+					this._onRemove( file );
 				}
 			});
-		} )
+		} );
+		//slight delay to allow the watcher to catch up
+		Promise.delay( 500 ).then( () => this._onReady() );
 	} );
 }
 
@@ -117,7 +131,6 @@ ResourcesProvider.prototype._readDir = function( dir ){
 					stat = new Stat( stat );
 					//decide if we need to update the reference
 					if( !refFile || !Stat.isEqual( stat, refFile.stat ) ){
-						console.log('needs updating or replacing', relativePath);
 						//get the hash
 						return this._updateFile(
 							relativePath
@@ -138,7 +151,6 @@ ResourcesProvider.prototype._updateFile = function( pathToFile, stat ){
 			this._changeCount++;
 		}
 		
-		console.log("updateFile", pathToFile  );
 		return Promise.all([
 			//generate the new hash for this file
 			md5( path.resolve( this._dir, pathToFile ) ),
@@ -170,12 +182,23 @@ ResourcesProvider.prototype._removeFile = function( pathToFile ){
 	return Promise.resolve( file );
 }
 
-
-
 ResourcesProvider.prototype.getFile = function( pathToFile ){
 	return _.find( this._resources, item => {
 		return item.path == pathToFile ? true : false;
 	}  );
+}
+
+ResourcesProvider.prototype.getFiles = function( dir ){
+	dir = dir || '';
+	
+	if( dir.length > 0 && !/\/$/.test( dir ) ){
+		//ensure always end in a trailing slash if not an empty string
+		dir += '/';
+	}
+	//find all files in that sub directory - returning just the path
+	return _.map( _.filter( this._resources, item => {
+		return dir.length == 0 || item.path.indexOf( dir ) == 0 ? true : false;
+	} ), item => item.path );
 }
 
 ResourcesProvider.prototype._loadCache = function( ){
@@ -219,7 +242,7 @@ ResourcesProvider.prototype._saveCache = function( options ){
 			this._saveCache( _.merge( options, {delay: 0} ) );
 		}, delay );
 	}else{
-		console.log(`saveCount ${this._saveCount++}`);
+		//console.log(`saveCount ${this._saveCount++}`);
 		//write back the resources
 		return fs.writeJSONAsync( this._pathCache, this._resources || [] );
 	}
