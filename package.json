@@ -1,0 +1,23 @@
+{
+  "name": "resources-provider",
+  "version": "1.0.0",
+  "main": "index.js",
+  "author": "Jimib",
+  "license": "MIT",
+  "scripts": {
+    "example": "node example/index",
+    "example:watch": "npx nodemon example/index.js"
+  },
+  "dependencies": {
+    "bluebird": "^3.5.3",
+    "chokidar": "^2.0.4",
+    "fs-extra-promise": "^1.0.1",
+    "lodash": "^4.17.11",
+    "md5-file": "^4.0.0",
+    "moment": "^2.23.0"
+  },
+  "nodemonConfig": {
+    "ignore": ["example/resources/*"],
+    "delay": "1000"
+  }
+}

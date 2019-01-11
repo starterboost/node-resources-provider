@@ -1,0 +1,4 @@
+yarn-error.log
+node_modules/*
+example/resources/*
+!example/resources/.gitkeep
