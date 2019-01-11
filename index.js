@@ -226,8 +226,24 @@ ResourcesProvider.prototype._saveCache = function( options ){
 
 }
 
-ResourcesProvider.prototype.express = function( req, res, next ){
+ResourcesProvider.prototype.express = function( options ){
+	
+	const app = require("express")();
+	app.get( '/', ( req, res, next ) => {
+		res.send( this._resources );
+	} );
 
+	app.use( ( req, res, next ) => {
+		const pathToFile = req.path.replace(/^\//,'');
+		const file = this.getFile( pathToFile );
+		if( file ){
+			res.sendFile( path.resolve(this._dir,file.path) );
+		}else{
+			next();
+		}
+	} )
+
+	return app;
 }
 
 function Stat( data ){

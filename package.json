@@ -17,7 +17,12 @@
     "moment": "^2.23.0"
   },
   "nodemonConfig": {
-    "ignore": ["example/resources/*"],
+    "ignore": [
+      "example/resources/*"
+    ],
     "delay": "1000"
+  },
+  "devDependencies": {
+    "express": "^4.16.4"
   }
 }
