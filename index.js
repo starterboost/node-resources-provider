@@ -10,7 +10,7 @@ const DEFAULT_SAVE_CACHE_DELAY = 250;
 
 function IsValidFile( relativePath ){
 	return _.includes([
-		'.resources.json',
+		'.cache.json',
 		'.gitkeep',
 	], relativePath ) ? false : true;
 }
@@ -28,7 +28,7 @@ function ResourcesProvider( options ){
 	this._onRemove = _.isFunction( options.onRemove ) ? options.onRemove : () => {};
 
 	this._dir = path.resolve( options.dir || '.' );
-	this._pathCache = path.resolve( this._dir, '.resources.json' );
+	this._pathCache = path.resolve( this._dir, '.cache.json' );
 	
 	this._loadCache()
 	.then( () => console.assert( this._resources ) )
@@ -173,13 +173,19 @@ ResourcesProvider.prototype._updateFile = function( pathToFile, stat ){
 }
 
 ResourcesProvider.prototype._removeFile = function( pathToFile ){
+	let result = false;
 	//remove the reference
-	const file = this.getFile( pathToFile );
-	if( file ){
-		this._changeCount++;
-		this._resources = _.without( this._resources, file );
+	while( true ){
+		const file = this.getFile( pathToFile );
+		if( file ){
+			this._changeCount++;
+			this._resources = _.without( this._resources, file );
+			result = true;
+		}else{
+			break;
+		}
 	}
-	return Promise.resolve( file );
+	return Promise.resolve( result );
 }
 
 ResourcesProvider.prototype.getFile = function( pathToFile ){
@@ -283,7 +289,7 @@ function Stat( data ){
 }
 
 Stat.PROPS_DEFAULT = ['size'];
-Stat.PROPS_DATE = ['mtime', 'ctime'];
+Stat.PROPS_DATE = ['mtime'];
 
 Stat.fromJSON = function( data ){
 	return new Stat( data );

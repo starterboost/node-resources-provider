@@ -26,7 +26,7 @@ const resources = require('..').init({
 			//create the file
 			const pathFull = path.resolve( DIR, file.path );
 			return fs.ensureDirAsync( path.dirname( pathFull ) )
-			.then( () => fs.writeFileAsync( pathFull, '' ) )
+			.then( () => fs.writeFileAsync( pathFull, file.path ) )
 			.then( () => Promise.delay( 1000 ) )
 		} )
 		//wait as the changes won't be detected immediately
