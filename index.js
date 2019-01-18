@@ -11,8 +11,9 @@ const DEFAULT_SAVE_CACHE_DELAY = 250;
 function IsValidFile( relativePath ){
 	return _.includes([
 		'.cache.json',
+		'.DS_Store',
 		'.gitkeep',
-	], relativePath ) ? false : true;
+	], path.basename( relativePath ) ) ? false : true;
 }
 
 
