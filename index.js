@@ -16,7 +16,6 @@ function IsValidFile( relativePath ){
 	], path.basename( relativePath ) ) ? false : true;
 }
 
-
 function ResourcesProvider( options ){
 	this.options = options || {};
 
@@ -30,6 +29,8 @@ function ResourcesProvider( options ){
 
 	this._dir = path.resolve( options.dir || '.' );
 	this._pathCache = path.resolve( this._dir, '.cache.json' );
+
+	//console.log( this._pathCache );
 	
 	this._loadCache()
 	.then( () => console.assert( this._resources ) )
@@ -43,7 +44,7 @@ function ResourcesProvider( options ){
 			//add events to the watcher
 			watcher
 			.on( 'add', ( file, stat ) => {
-				file = path.relative( this._dir, file );
+				file = this.resolveFileName( file );
 				if( IsValidFile( file ) ){
 					//update the file
 					this._updateFile(
@@ -60,7 +61,7 @@ function ResourcesProvider( options ){
 
 			})
 			.on( 'change', ( file, stat ) => {
-				file = path.relative( this._dir, file );
+				file = this.resolveFileName( file );
 				if( IsValidFile( file ) ){
 					//this means that the file content have updated
 					this._updateFile(
@@ -76,7 +77,7 @@ function ResourcesProvider( options ){
 				}
 			})
 			.on( 'unlink', ( file, stat ) => {
-				file = path.relative( this._dir, file );
+				file = this.resolveFileName( file );
 				if( IsValidFile( file ) ){
 					//console.log('watcher:unlink', file );
 					this._removeFile( file )
@@ -93,9 +94,14 @@ function ResourcesProvider( options ){
 	} );
 }
 
+ResourcesProvider.prototype.resolveFileName = function( file ){
+	return path.relative( this._dir, file ).replace('\\', '/');
+}
+
 ResourcesProvider.prototype._scanDir = function( dir ){
 	//list all the files in _resources - tick off files from the register when we pass them
 	this._register = _.map( this._resources, resource => resource.path );
+	//console.log('_scanDir');
 	return this._readDir()
 	.then( () => {
 		//anything not ticked off will be deleted from resources
@@ -111,7 +117,7 @@ ResourcesProvider.prototype._readDir = function( dir ){
 		return Promise.mapSeries( items, item => {
 			//where are we
 			const fullPath = path.resolve( dir, item );
-			const relativePath = path.relative( this._dir, fullPath );
+			const relativePath = this.resolveFileName( fullPath );
 
 			if( !IsValidFile( relativePath ) ){
 				//we ignore these files
