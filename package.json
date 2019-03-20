@@ -5,8 +5,10 @@
   "author": "Jimib",
   "license": "MIT",
   "scripts": {
-    "example": "node example/index",
-    "example:watch": "npx nodemon example/index.js"
+    "example:local": "node example/local/index",
+    "example:local:watch": "npx nodemon example/local/index.js",
+    "example:cache": "node example/cache/index",
+    "example:cache:watch": "npx nodemon example/cache/index.js"
   },
   "dependencies": {
     "bluebird": "^3.5.3",
@@ -14,11 +16,13 @@
     "fs-extra-promise": "^1.0.1",
     "lodash": "^4.17.11",
     "md5-file": "^4.0.0",
-    "moment": "^2.23.0"
+    "moment": "^2.23.0",
+    "request": "^2.88.0",
+    "request-promise": "^4.2.4"
   },
   "nodemonConfig": {
     "ignore": [
-      "example/resources/*"
+      "example/**/resources/*"
     ],
     "delay": "1000"
   },

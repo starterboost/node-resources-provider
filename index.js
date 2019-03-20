@@ -5,6 +5,8 @@ const moment = require("moment");
 const Promise = require("bluebird");
 const md5 = Promise.promisify( require("md5-file") );
 const chokidar = require('chokidar');
+const _request = require('request');
+const request = require('request-promise');
 
 const DEFAULT_SAVE_CACHE_DELAY = 250;
 
@@ -322,9 +324,88 @@ Stat.isEqual = function( a, b ){
 }
 
 
+function ResourcesCache( options ){
+	this.options = options || {};
+
+	this.intervalSync = this.options.intervalSync || 60000;
+}
+
+ResourcesCache.prototype.sync = function(){
+	//this will pull down the cache - checking if the file exists and if it needs to be resynced
+	return request( `${this.options.url}${this.options.pathToCache || ''}`, {json:true} )
+	.then( items => {
+		return Promise.mapSeries( items, item  => {
+			//download the file if it's required
+			return this.syncFile( item )
+		} );
+	} );
+}
+
+ResourcesCache.prototype.syncFile = function( file ){
+	//set up common variables
+	const pathToFile = path.resolve( this.options.dir, file.path );
+	const urlToFile = `${this.options.url}/${file.path}`;
+	//check for existence
+	return fs.existsAsync( pathToFile )
+	.then( exists => {
+		if( exists ){
+			//check the hash to see if still valid
+			return md5( pathToFile )
+			.then( (hash) => {
+				//check if the hash matches - if no match then force the sync
+				return file.hash == hash ? false : true;
+			} );
+		}else{
+			//force the sync
+			return true;
+		}
+	} )
+	.then( boolSync => {
+		if( boolSync ){
+			//download th
+			return downloadFile( pathToFile, urlToFile );
+		}
+		//skipped
+		return file.path;
+	} )
+}
+
+
 module.exports = {
 	ResourcesProvider,
 	init : ( options ) => {
 		return new ResourcesProvider( options );
+	},
+	cache : ( options ) => {
+		return new ResourcesCache( options );
 	}
+}
+
+
+//HELPERS
+function downloadFile( file, url ){
+	return new Promise( (resolve, reject) => {
+		let isComplete = false;
+		function onComplete( err ){
+			if( !isComplete ){
+				isComplete = true;
+
+				if( err ){
+					reject( err );
+				}else{
+					resolve();
+				}
+			}
+		}
+
+
+		//make sure the directory exists
+		fs.ensureDirAsync( path.dirname( file ) )
+		.then( ()  => {
+			//download the file
+			request( url ).pipe(fs.createWriteStream( file ))
+			.on('finish', onComplete )
+			.on('error', onComplete )
+		} );
+	} );
 }

@@ -1,4 +1,4 @@
 yarn-error.log
 node_modules/*
-example/cache/resources/*
-!example/cache/resources/.gitkeep
+example/**/resources/*
+!example/**/resources/.gitkeep
