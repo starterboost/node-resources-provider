@@ -10,12 +10,12 @@ const request = require('request-promise');
 
 const DEFAULT_SAVE_CACHE_DELAY = 250;
 
-function IsValidFile( relativePath ){
+function IsValidFile( filePath ){
 	return _.includes([
 		'.cache.json',
 		'.DS_Store',
 		'.gitkeep',
-	], path.basename( relativePath ) ) ? false : true;
+	], path.basename( filePath ) ) ? false : true;
 }
 
 function ResourcesProvider( options ){
@@ -326,19 +326,33 @@ Stat.isEqual = function( a, b ){
 
 function ResourcesCache( options ){
 	this.options = options || {};
-
-	this.intervalSync = this.options.intervalSync || 60000;
 }
 
 ResourcesCache.prototype.sync = function(){
 	//this will pull down the cache - checking if the file exists and if it needs to be resynced
 	return request( `${this.options.url}${this.options.pathToCache || ''}`, {json:true} )
 	.then( items => {
-		return Promise.mapSeries( items, item  => {
-			//download the file if it's required
-			return this.syncFile( item )
-		} );
-	} );
+		return ReadDir( this.options.dir )
+		.then( filesInCache => _.map( filesInCache, file => path.relative( this.options.dir, file ) ) )
+		.then( filesInCache => {
+			//we have a list of all files in our current cache
+			return Promise.mapSeries( items, item  => {
+				//remove this file from our list of filesInCache
+				filesInCache = _.without( filesInCache, item.path );
+				//download the file if it's required
+				return this.syncFile( item )
+			} )
+			.then( () => {
+				//delete all the files that are still in our cache
+				return Promise.mapSeries( filesInCache, ( file ) => {
+					return fs.removeAsync( path.resolve( this.options.dir, file ) ) 
+				});
+			} );
+		} )
+	} )
+	.then( () => {
+		//get a list of local files
+	} )
 }
 
 ResourcesCache.prototype.syncFile = function( file ){
@@ -408,4 +422,31 @@ function downloadFile( file, url ){
 			.on('error', onComplete )
 		} );
 	} );
+}
+
+function ReadDir( dir ){
+	//read the contents of the directory
+	return fs.readdirAsync( dir )
+	.then( items => {
+		return Promise.mapSeries( items, item => {
+			//where are we
+			const fullPath = path.resolve( dir, item );
+
+			if( !IsValidFile( fullPath ) ){
+				//we ignore these files
+				return null;
+			}
+
+			//get stat on the item
+			return fs.statAsync( fullPath )
+			.then( stat => {
+				//decide if we need to drill down
+				if( stat.isDirectory() ){
+					return ReadDir( fullPath );
+				}else{
+					return fullPath;
+				}
+			} );
+		});
+	} ).then( result => _.flattenDeep( result ) )
 }

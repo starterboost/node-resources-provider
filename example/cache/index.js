@@ -4,7 +4,8 @@ const express = require('express');
 
 const PORT = 3000;
 const DIR = path.resolve( __dirname, './resources' );
-const URL_SERVER = 'http://localhost:4000';/** ADD THE URL OF YOUR RESOURCE PROVIDER HERE*/
+const URL_SERVER = 'http://localhost:4000/resources';/** ADD THE URL OF YOUR RESOURCE PROVIDER HERE*/
+const PATH_TO_CACHE = null;
 //make sure the directory exists
 fs.ensureDirSync( DIR );
 
@@ -15,7 +16,7 @@ const app = express();
 const cache = require('../..').cache({
 	dir : DIR,
 	url : URL_SERVER,
-	pathToCache : '/cache'
+	pathToCache : PATH_TO_CACHE
 });
 
 cache.sync().then( () => {
