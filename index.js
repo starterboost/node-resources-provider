@@ -448,5 +448,5 @@ function ReadDir( dir ){
 				}
 			} );
 		});
-	} ).then( result => _.flattenDeep( result ) )
+	} ).then( result => _.filter(  _.flattenDeep( result ) ) )
 }
