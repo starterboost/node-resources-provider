@@ -8,7 +8,8 @@
     "example:local": "node example/local/index",
     "example:local:watch": "npx nodemon example/local/index.js",
     "example:cache": "node example/cache/index",
-    "example:cache:watch": "npx nodemon example/cache/index.js"
+    "example:cache:watch": "npx nodemon example/cache/index.js",
+    "release": "node scripts/release.js"
   },
   "dependencies": {
     "bluebird": "^3.5.3",
@@ -27,6 +28,7 @@
     "delay": "1000"
   },
   "devDependencies": {
+    "child-process-promise": "^2.2.1",
     "express": "^4.16.4"
   }
 }
