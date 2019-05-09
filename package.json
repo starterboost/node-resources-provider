@@ -1,5 +1,5 @@
 {
-  "name": "resources-provider",
+  "name": "@starterboost/resources-provider",
   "version": "1.1.1",
   "main": "index.js",
   "author": "Jimib",
